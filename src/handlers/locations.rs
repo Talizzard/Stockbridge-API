@@ -9,13 +9,21 @@ pub async fn create_location(
                              Json(payload): Json<CreateLocationReq>,
 ) -> Result<Json<LocationRes>, (StatusCode, String)> {
     let new_id = Uuid::new_v4().to_string();
+
     let result = sqlx::query(
-        r#"INSERT INTO "locations" ("id", "warehouseId", "sector", "rack", "level", "position", "fullCode", "qrToken", "isActive")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"#
+        r#"INSERT INTO "locations" ("id", "warehouseId", "sector", "rack", "level", "position", "fullCode", "qrToken", "isActive", "maxCapacity")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"#
     )
-    .bind(&new_id).bind(&payload.warehouse_id).bind(&payload.sector).bind(&payload.rack)
-    .bind(&payload.level).bind(&payload.position).bind(&payload.full_code)
-    .bind(&payload.qr_token).bind(true)
+    .bind(&new_id)
+    .bind(&payload.warehouse_id)
+    .bind(&payload.sector)
+    .bind(&payload.rack)
+    .bind(&payload.level)
+    .bind(&payload.position)
+    .bind(&payload.full_code)
+    .bind(&payload.qr_token)
+    .bind(true)
+    .bind(&payload.max_capacity) // <- NOVO BIND AQUI
     .execute(&pool).await;
 
     match result {
