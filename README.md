@@ -256,7 +256,3 @@ podman run --name stockbridge-db -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=sen
 
 Crie um arquivo `.env` na raiz com:
 `DATABASE_URL=postgres://admin:senha_secreta@localhost:5432/stockbridge`
-
-```
-
-```
