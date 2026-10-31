@@ -1,6 +1,6 @@
-use axum::{extract::{Query, State}, http::StatusCode};
+use axum::{extract::{Query, State}, http::StatusCode, Json};
 use sqlx::{Pool, Postgres};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use chrono::{Utc, Duration};
 use uuid::Uuid;
 
@@ -39,4 +39,40 @@ pub async fn meli_callback(
     tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok("Integração concluída! Feche esta janela e volte para o sistema.".to_string())
+}
+
+#[derive(Deserialize)]
+pub struct CreateMeliLinkReq {
+    pub product_id: String,
+    pub meli_item_id: String, // Ex: MLB123456789
+}
+
+#[derive(Serialize)]
+pub struct MeliLinkRes {
+    pub id: String,
+}
+
+pub async fn create_meli_link(
+    State(pool): State<Pool<Postgres>>,
+                              Json(payload): Json<CreateMeliLinkReq>,
+) -> Result<Json<MeliLinkRes>, (StatusCode, String)> {
+    let link_id = Uuid::new_v4().to_string();
+
+    // Insere o vínculo no banco de dados
+    sqlx::query!(
+        r#"INSERT INTO meli_links (id, "productId", "meliItemId") VALUES ($1, $2, $3)"#,
+                 link_id, payload.product_id, payload.meli_item_id
+    )
+    .execute(&pool)
+    .await
+    .map_err(|e| {
+        // Tratamento caso tentem cadastrar o mesmo MLB duas vezes
+        if e.to_string().contains("unique constraint") {
+            (StatusCode::BAD_REQUEST, "Esse anúncio do Mercado Livre já está vinculado a um produto.".into())
+        } else {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Erro no banco: {}", e))
+        }
+    })?;
+
+    Ok(Json(MeliLinkRes { id: link_id }))
 }
