@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: stockbridge-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: senha_secreta
+      POSTGRES_DB: stockbridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Na PRIMEIRA criação do banco, o Postgres executa os .sql desta pasta.
+      # Isso cria as tabelas antes do cargo compilar (o sqlx confere as queries no banco).
+      - ./migrations:/docker-entrypoint-initdb.d:ro,z
+
+volumes:
+  postgres_data:
